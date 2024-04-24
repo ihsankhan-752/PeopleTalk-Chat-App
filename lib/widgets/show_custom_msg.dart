@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:people_talk/themes/app_colors.dart';
+import 'package:people_talk/constants/app_colors.dart';
 
 showCustomMsg(String msg) {
   Get.snackbar(

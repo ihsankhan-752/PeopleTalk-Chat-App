@@ -1,4 +1,4 @@
-package com.example.people_talk
+package com.iktechsol.people_talk
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:people_talk/constants/app_text.dart';
+import 'package:people_talk/constants/app_text_style.dart';
+import 'package:people_talk/constants/loading_indicator.dart';
+import 'package:people_talk/constants/text_controller.dart';
 import 'package:people_talk/screens/auth/forgot_password_screen.dart';
 import 'package:people_talk/screens/auth/sign_up_screen.dart';
 import 'package:people_talk/services/auth_services.dart';
-import 'package:people_talk/themes/app_text_style.dart';
-import 'package:people_talk/utils/app_text.dart';
-import 'package:people_talk/utils/text_controller.dart';
 import 'package:people_talk/widgets/buttons.dart';
 import 'package:people_talk/widgets/custom_text_input.dart';
 import 'package:people_talk/widgets/logo_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../controllers/visibility_controller.dart';
-import '../../themes/app_colors.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -38,7 +38,6 @@ class LoginScreen extends StatelessWidget {
             ),
             const SizedBox(height: 5),
             CustomTextInput(
-              validator: (v) {},
               hintText: AppText.email,
               controller: appTextControllers.emailController,
             ),
@@ -51,7 +50,6 @@ class LoginScreen extends StatelessWidget {
             Consumer<VisibilityController>(
               builder: (_, value, __) {
                 return CustomTextInput(
-                  validator: (v) {},
                   controller: appTextControllers.passwordController,
                   hintText: "Password",
                   isIconReq: true,
@@ -78,12 +76,13 @@ class LoginScreen extends StatelessWidget {
             const SizedBox(height: 20),
             authServices.isLoading
                 ? Center(
-                    child: CircularProgressIndicator(color: AppColors.mainColor),
+                    child: spinKit2,
                   )
                 : PrimaryButton(
                     title: AppText.login,
                     onPressed: () {
                       authServices.signIn(
+                        context,
                         appTextControllers.emailController.text,
                         appTextControllers.passwordController.text,
                       );

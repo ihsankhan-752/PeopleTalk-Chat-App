@@ -8,6 +8,9 @@ class UserModel {
   int? contact;
   String? image;
   List? friendsList;
+  List? sendRequestList;
+  List? receivedRequestList;
+  DateTime? memberSince;
 
   UserModel({
     this.userId,
@@ -17,6 +20,9 @@ class UserModel {
     this.bio,
     this.contact,
     this.friendsList,
+    this.memberSince,
+    this.sendRequestList,
+    this.receivedRequestList,
   });
   factory UserModel.fromDoc(DocumentSnapshot snap) {
     return UserModel(
@@ -27,6 +33,9 @@ class UserModel {
       bio: snap['bio'],
       image: snap['image'],
       friendsList: snap['friendsList'],
+      sendRequestList: snap['sendRequestList'],
+      receivedRequestList: snap['receivedRequestList'],
+      memberSince: (snap['memberSince'].toDate()),
     );
   }
   Map<String, dynamic> toMap() {
@@ -38,6 +47,9 @@ class UserModel {
       'bio': bio,
       'image': image,
       'friendsList': friendsList,
+      'sendRequestList': sendRequestList,
+      'receivedRequestList': receivedRequestList,
+      'memberSince': memberSince,
     };
   }
 }

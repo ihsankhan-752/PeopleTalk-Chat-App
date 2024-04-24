@@ -1,15 +1,14 @@
-import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:people_talk/models/user_model.dart';
 import 'package:people_talk/screens/auth/login_screen.dart';
-import 'package:people_talk/screens/auth/user_info_entering_screen.dart';
-import 'package:people_talk/screens/home/home_screen.dart';
-import 'package:people_talk/services/storage_services.dart';
+import 'package:people_talk/screens/custom_navbar/custom_navbar.dart';
 import 'package:people_talk/widgets/show_custom_msg.dart';
+import 'package:provider/provider.dart';
+
+import '../controllers/loading_controller.dart';
 
 class AuthServices extends ChangeNotifier {
   bool _isLoading = false;
@@ -48,13 +47,13 @@ class AuthServices extends ChangeNotifier {
           bio: "",
           image: "",
           friendsList: [],
+          sendRequestList: [],
+          receivedRequestList: [],
+          memberSince: DateTime.now(),
         );
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(FirebaseAuth.instance.currentUser!.uid)
-            .set(userModel.toMap());
+        await FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).set(userModel.toMap());
         setLoading(false);
-        Get.to(() => const UserInformationEnteringScreen());
+        Get.to(() => const CustomNavBar());
       } on FirebaseException catch (err) {
         setLoading(false);
         showCustomMsg(err.message.toString());
@@ -62,30 +61,7 @@ class AuthServices extends ChangeNotifier {
     }
   }
 
-  updateBioAndImageForProfile(File image, String bio) async {
-    if (image == null) {
-      showCustomMsg("Image Is Required");
-    } else if (bio.isEmpty) {
-      showCustomMsg("Enter Something About yourself");
-    } else {
-      setLoading(true);
-      try {
-        String imageUrl = await StorageServices().uploadImageToDb(File(image.path));
-
-        await FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).update({
-          'image': imageUrl,
-          "bio": bio,
-        });
-        setLoading(false);
-        Get.to(() => const HomeScreen());
-      } catch (e) {
-        setLoading(false);
-        showCustomMsg(e.toString());
-      }
-    }
-  }
-
-  signIn(String email, String password) async {
+  signIn(BuildContext context, String email, String password) async {
     if (email.isEmpty) {
       showCustomMsg("Email is Required");
     } else if (password.isEmpty) {
@@ -97,13 +73,25 @@ class AuthServices extends ChangeNotifier {
           email: email,
           password: password,
         );
-        setLoading(false);
 
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
-        Get.to(() => const HomeScreen());
+        await FirebaseAuth.instance.authStateChanges().first;
+
+        User? user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          QuerySnapshot snap = await FirebaseFirestore.instance.collection('users').where('email', isEqualTo: email).get();
+          if (snap.docs.isNotEmpty) {
+            setLoading(false);
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const CustomNavBar()));
+          } else {
+            setLoading(false);
+            showCustomMsg("No User Found!");
+          }
+        } else {
+          setLoading(false);
+          showCustomMsg("Authentication Failed");
+        }
+
+        setLoading(false);
       } on FirebaseAuthException catch (e) {
         setLoading(false);
         showCustomMsg(e.message.toString());
@@ -131,10 +119,18 @@ class AuthServices extends ChangeNotifier {
   logOut() async {
     try {
       await FirebaseAuth.instance.signOut();
-      Get.to(() => const LoginScreen());
+      Get.offAll(() => const LoginScreen());
     } on FirebaseAuthException catch (e) {
       showCustomMsg(e.message!);
     }
+  }
+
+  deleteAccount(BuildContext context) async {
+    await FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).delete();
+
+    await FirebaseAuth.instance.signOut();
+
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
   }
 
   addUserToFriendList(String userId) async {
@@ -147,6 +143,54 @@ class AuthServices extends ChangeNotifier {
       });
     } on FirebaseException catch (e) {
       showCustomMsg(e.message!);
+    }
+  }
+
+  static Future<bool> checkOldPasswordCreative(email, password) async {
+    AuthCredential authCredential = EmailAuthProvider.credential(email: email, password: password);
+    try {
+      var credentialResult = await FirebaseAuth.instance.currentUser!.reauthenticateWithCredential(authCredential);
+      return credentialResult.user != null;
+    } catch (e) {
+      print(e);
+      return false;
+    }
+  }
+
+  static Future<void> changeUserPasswordCreative({
+    required BuildContext context,
+    required String oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    if (oldPassword.isEmpty) {
+      showCustomMsg("Old password required");
+    } else if (newPassword.isEmpty) {
+      showCustomMsg("New password required");
+    } else if (newPassword != confirmPassword) {
+      showCustomMsg("Password does not match");
+    } else {
+      Provider.of<LoadingController>(context, listen: false).setLoading(true);
+      bool checkPassword = true;
+      checkPassword = await checkOldPasswordCreative(
+        FirebaseAuth.instance.currentUser!.email,
+        oldPassword,
+      );
+      if (checkPassword) {
+        try {
+          await FirebaseAuth.instance.currentUser!.updatePassword(newPassword);
+          Provider.of<LoadingController>(context, listen: false).setLoading(false);
+
+          showCustomMsg("Password Updated Successfully");
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginScreen()));
+        } catch (e) {
+          Provider.of<LoadingController>(context, listen: false).setLoading(false);
+          showCustomMsg(e.toString());
+        }
+      } else {
+        Provider.of<LoadingController>(context, listen: false).setLoading(false);
+        showCustomMsg("Invalid Password");
+      }
     }
   }
 }

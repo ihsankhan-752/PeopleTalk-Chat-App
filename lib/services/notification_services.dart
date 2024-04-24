@@ -5,11 +5,16 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
-import 'package:people_talk/utils/const.dart';
+import 'package:people_talk/models/notification_model.dart';
+import 'package:people_talk/widgets/show_custom_msg.dart';
+import 'package:uuid/uuid.dart';
+
+import '../constants/keys.dart';
 
 class NotificationServices {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
@@ -48,11 +53,9 @@ class NotificationServices {
     var androidInitializationSettings = const AndroidInitializationSettings('@mipmap/ic_launcher');
     var iosInitializationSettings = const DarwinInitializationSettings();
 
-    var initializationSetting =
-        InitializationSettings(android: androidInitializationSettings, iOS: iosInitializationSettings);
+    var initializationSetting = InitializationSettings(android: androidInitializationSettings, iOS: iosInitializationSettings);
 
-    await _flutterLocalNotificationsPlugin.initialize(initializationSetting,
-        onDidReceiveNotificationResponse: (payload) {
+    await _flutterLocalNotificationsPlugin.initialize(initializationSetting, onDidReceiveNotificationResponse: (payload) {
       // handleMessage(context, message, message.data['userId']);
     });
   }
@@ -170,5 +173,27 @@ class NotificationServices {
       headers: notificationHeader,
       body: jsonEncode(notificationFormat),
     );
+  }
+
+  static addNotificationInDb({
+    required String notificationTitle,
+    required String notificationBody,
+    required String toUserId,
+  }) async {
+    try {
+      var notificationId = const Uuid().v4();
+
+      NotificationModel notificationModel = NotificationModel(
+        notificationId: notificationId,
+        notificationTitle: notificationTitle,
+        notificationBody: notificationBody,
+        fromUserId: FirebaseAuth.instance.currentUser!.uid,
+        toUserId: toUserId,
+        createdAt: DateTime.now(),
+      );
+      await FirebaseFirestore.instance.collection('notifications').doc(notificationId).set(notificationModel.toMap());
+    } on FirebaseException catch (e) {
+      showCustomMsg(e.message!);
+    }
   }
 }

@@ -3,7 +3,7 @@
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <application
-        android:label="people_talk"
+        android:label="People Talk"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

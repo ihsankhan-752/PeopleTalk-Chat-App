@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:people_talk/utils/splash_timer.dart';
+import 'package:people_talk/constants/splash_timer.dart';
 import 'package:people_talk/widgets/logo_widget.dart';
 
 class SplashScreen extends StatefulWidget {

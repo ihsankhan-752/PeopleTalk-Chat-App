@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:people_talk/constants/text_controller.dart';
 import 'package:people_talk/screens/auth/login_screen.dart';
 import 'package:people_talk/services/auth_services.dart';
-import 'package:people_talk/themes/app_colors.dart';
-import 'package:people_talk/utils/text_controller.dart';
-import 'package:people_talk/widgets/show_custom_msg.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/app_text.dart';
+import '../../constants/app_text_style.dart';
+import '../../constants/loading_indicator.dart';
 import '../../controllers/visibility_controller.dart';
-import '../../themes/app_text_style.dart';
-import '../../utils/app_text.dart';
 import '../../widgets/buttons.dart';
 import '../../widgets/custom_text_input.dart';
 import '../../widgets/logo_widget.dart';
@@ -21,9 +20,6 @@ class SignUpScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     AppTextControllers appTextControllers = AppTextControllers();
     final authController = Provider.of<AuthServices>(context);
-
-    // Regular expression for a valid contact number with a country code.
-    RegExp contactRegExp = RegExp(r'^\+\d{1,15}$');
 
     return Scaffold(
       body: Padding(
@@ -46,7 +42,6 @@ class SignUpScreen extends StatelessWidget {
               CustomTextInput(
                 hintText: AppText.username,
                 controller: appTextControllers.usernameController,
-                validator: (v) {},
               ),
               const SizedBox(height: 15),
               Text(
@@ -57,7 +52,6 @@ class SignUpScreen extends StatelessWidget {
               CustomTextInput(
                 hintText: AppText.email,
                 controller: appTextControllers.emailController,
-                validator: (v) {},
               ),
               const SizedBox(height: 15),
               Text(
@@ -66,17 +60,9 @@ class SignUpScreen extends StatelessWidget {
               ),
               const SizedBox(height: 5),
               CustomTextInput(
+                inputType: TextInputType.number,
                 hintText: AppText.contact,
                 controller: appTextControllers.contactController,
-                validator: (String? value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a contact number.';
-                  }
-                  if (!contactRegExp.hasMatch(value)) {
-                    return 'Please enter a valid contact number with a country code (e.g., +123456789).';
-                  }
-                  return null; // Validation passed
-                },
               ),
               const SizedBox(height: 15),
               Text(
@@ -87,7 +73,6 @@ class SignUpScreen extends StatelessWidget {
               Consumer<VisibilityController>(
                 builder: (_, value, __) {
                   return CustomTextInput(
-                    validator: (v) {},
                     controller: appTextControllers.passwordController,
                     hintText: "Password",
                     isIconReq: true,
@@ -104,23 +89,17 @@ class SignUpScreen extends StatelessWidget {
               const SizedBox(height: 20),
               authController.isLoading
                   ? Center(
-                      child: CircularProgressIndicator(color: AppColors.mainColor),
+                      child: spinKit2,
                     )
                   : PrimaryButton(
                       title: AppText.create,
                       onPressed: () async {
-                        final contactInput = appTextControllers.contactController.text;
-                        if (!contactRegExp.hasMatch(contactInput)) {
-                          showCustomMsg(
-                              'Invalid contact number. Please enter a valid contact number with a country code.');
-                        } else {
-                          await authController.userSignUp(
-                            username: appTextControllers.usernameController.text,
-                            email: appTextControllers.emailController.text,
-                            password: appTextControllers.passwordController.text,
-                            contact: int.tryParse(contactInput.substring(1)),
-                          );
-                        }
+                        await authController.userSignUp(
+                          username: appTextControllers.usernameController.text,
+                          email: appTextControllers.emailController.text,
+                          password: appTextControllers.passwordController.text,
+                          contact: int.tryParse(appTextControllers.contactController.text),
+                        );
                       },
                     ),
               const SizedBox(height: 20),
